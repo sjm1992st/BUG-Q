@@ -1,0 +1,65 @@
+
+帮实验电脑配环境，vs2013出现这个问题，重装vs不行
+
+
+https://www.cnblogs.com/lonelyxmas/p/8970174.html
+
+
+Visual Studio 2017 调试器的工作进程（msvsmon.exe）意外退出 调试将终止
+原文:Visual Studio 2017 调试器的工作进程（msvsmon.exe）意外退出 调试将终止
+开发环境：
+
+Windows 10 in Parallels Desktop
+Visual Studio 15.6
+场景还原：
+使用 Visual Studio 15.6 (即 Visual Studio 2017) 新建 ASP.NET Core MVC 项目，启动调试，提示：
+
+调试器的工作进程（msvsmon.exe）意外退出。调试将终止
+其实这个问题曾经多次遇到过，但是都没做记录，导致每次都得重新搜索解决方案。
+
+打开「事件查看器」，依次点击「Windows 日志」-「应用程序」，可以看到两条「错误」级别的日志：
+
+
+其中，来源为"Application Error"的日志显示如下：
+
+描述:
+错误应用程序名称: msvsmon.exe，版本: 15.0.27428.2043，时间戳: 0x5adf7e7a
+错误模块名称: unknown，版本: 0.0.0.0，时间戳: 0x00000000
+异常代码: 0xc0000005
+错误偏移量: 0x0000000000000000
+错误进程 ID: 0x1518
+错误应用程序启动时间: 0x01d3de90a8d1c526
+错误应用程序路径: C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\Remote Debugger\x64\msvsmon.exe
+错误模块路径: unknown
+来源为"Visual Studio Remote Debugger"的日志显示如下：
+
+描述:
+无法找到来自源 Visual Studio Remote Debugger 的事件 ID 1002 的描述。本地计算机上未安装引发此事件的组件，或者安装已损坏。可以安装或修复本地计算机上的组件。
+
+如果该事件产生于另一台计算机，则必须在该事件中保存显示信息。
+
+以下是包含在事件中的信息: 
+
+远程调试器遇到了严重的内部错误，必须中止远程调试会话。请重新启动调试。
+然后 Google 到这篇文章 恼人的Visual Studio 2010崩溃重启问题，看到作者最后关闭防火墙解决该问题后，我立即尝试关闭防火墙重试，果然正常启动调试器。
+
+然后我又想到，昨晚在 Windows Server 上搭建 NGINX，遇到外网不能访问的问题，原因就是在防火墙设置中，没有将ngingx.exe加入到允许应用通过防火墙进行通信的列表。
+
+联想到此，我重新打开防火墙，然后将msvsmon.exe加入到允许应用通过防火墙进行通信的列表，并勾上专用和公用。
+
+再次启动调试，成功！
+
+仔细看msvsmon.exe的路径，是在 Remote Debugger 文件夹下，意思是远程调试吗？因此需要通过防火墙和外网通信？
+我们知道 vs 可以远程调试另一台机器的代码，但是本地调试时应该不涉及外网通信，难道和我的虚拟机环境有关系？但是以前在非虚拟机环境中也遇到过。
+希望有了解的朋友解惑！
+
+更新：
+上面的解决办法，只成功了一次，然后第二次就不行了...
+
+没办法，继续找解决方案，尝试用英文关键词 Google
+the debugger's worker process (msvsmon.exe) unexpectedly exited. debugging will be aborted
+找到这篇文章 msvsmon.exe crashed when debugging，汇总了很多该问题的解决办法，其中有一条引起了我的注意：
+
+I too have Astrill installed. Completely uninstalling Astrill fixed the issue.
+是的！我就是安装了 Astrill，内心一阵欣喜，原来是这厮引起的！
+卸载 Astrill 后重启电脑，反复启动调试没有问题，完美！
